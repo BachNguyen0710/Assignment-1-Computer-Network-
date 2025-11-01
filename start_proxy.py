@@ -88,13 +88,14 @@ def parse_virtual_hosts(config_file):
         #       the policy is applied to identify the highes matching
         #       proxy_pass
         #
-        if len(proxy_map.get(host,[])) == 1:
-            routes[host] = (proxy_map.get(host,[])[0], dist_policy_map)
+        num_proxies = len(proxy_passes)
+        if num_proxies == 1:
+            routes[host] = (proxy_passes[0], dist_policy_map)
         # esle if:
         #         TODO:  apply further policy matching here
         #
         else:
-            routes[host] = (proxy_map.get(host,[]), dist_policy_map)
+            routes[host] = (proxy_passes, dist_policy_map)
 
     for key, value in routes.items():
         print (key, value)

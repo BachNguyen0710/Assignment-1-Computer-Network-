@@ -159,7 +159,8 @@ class Response():
             elif sub_type == 'html':
                 base_dir = BASE_DIR+"www/"
             else:
-                handle_text_other(sub_type)
+                # TODO: handle_text_other(sub_type)
+                base_dir = BASE_DIR+"static/"
         elif main_type == 'image':
             base_dir = BASE_DIR+"static/"
             self.headers['Content-Type']='image/{}'.format(sub_type)
@@ -178,6 +179,12 @@ class Response():
         #        video/mpeg
         #        ...
         #
+        elif main_type == 'video':
+            base_dir = BASE_DIR+"static/"
+            self.headers['Content-Type']='video/{}'.format(sub_type)
+        elif mime_type == 'image/x-icon':
+            base_dir = BASE_DIR+"static/"
+            self.headers['Content-Type'] = 'image/x-icon'
         else:
             raise ValueError("Invalid MEME type: main_type={} sub_type={}".format(main_type,sub_type))
 
@@ -201,8 +208,16 @@ class Response():
             #  TODO: implement the step of fetch the object file
             #        store in the return value of content
             #
-        return len(content), content
-
+        try:
+            with open(filepath, 'rb') as f:
+                content = f.read()
+            return len(content), content
+        except FileNotFoundError:
+            print("[Response] file not found at location {}".format(filepath))
+            return 0, b''
+        except Exception as e:
+            print("[Response] Error reading file {}: {}".format(filepath, e))
+            return 0, b""
 
     def build_response_header(self, request):
         """
@@ -215,7 +230,11 @@ class Response():
         """
         reqhdr = request.headers
         rsphdr = self.headers
-
+        # Set default status if not provided (e.g., by a hook)
+        if not self.status_code:
+            self.status_code = 200
+        if not self.reason:
+            self.reason = "OK" 
         #Build dynamic headers
         headers = {
                 "Accept": "{}".format(reqhdr.get("Accept", "application/json")),
@@ -242,10 +261,17 @@ class Response():
             #  TODO: implement the header building to create formated
             #        header from the provied headers
             #
+        # Start with the status line
+        fmt_header = "HTTP/1.1 {} {}\r\n".format(self.status_code, self.reason)
+
+        # Add all key-value pairs from the headers dictionary
+        for key, value in headers.items():
+            fmt_header += "{}: {}\r\n".format(key, value)
         #
         # TODO prepare the request authentication
         #
 	# self.auth = ...
+        fmt_header += "\r\n"
         return str(fmt_header).encode('utf-8')
 
 
@@ -292,6 +318,10 @@ class Response():
         #
         # TODO: add support objects
         #
+        elif mime_type in ['image', 'video', 'application']:
+            base_dir = self.prepare_content_type(mime_type = mime_type)
+        elif path.endswith('favicon.ico'):
+             base_dir = self.prepare_content_type(mime_type = 'image/x-icon')
         else:
             return self.build_notfound()
 

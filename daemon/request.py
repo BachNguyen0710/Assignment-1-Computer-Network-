@@ -58,7 +58,7 @@ class Request():
         #: HTTP path
         self.path = None        
         # The cookies set used to create Cookie header
-        self.cookies = None
+        self.cookies = CaseInsensitiveDict()
         #: request body to send to the server.
         self.body = None
         #: Routes
@@ -116,7 +116,12 @@ class Request():
             #
             #  TODO: implement the cookie function here
             #        by parsing the header            #
-
+        if cookies:
+            for cookie_pair in cookies.split(';'):
+                cookie_pair = cookie_pair.strip()
+                if '=' in cookie_pair:
+                    key, value = cookie_pair.split('=', 1)
+                    self.cookies[key.strip()] = value.strip()
         return
 
     def prepare_body(self, data, files, json=None):

@@ -19,7 +19,7 @@ http settings (headers, bodies). The adapter supports both
 raw URL paths and RESTful route definitions, and integrates with
 Request and Response objects to handle client-server communication.
 """
-
+import json
 from .request import Request
 from .response import Response
 from .dictionary import CaseInsensitiveDict
@@ -104,22 +104,58 @@ class HttpAdapter:
 
         # Handle the request
         msg = conn.recv(1024).decode()
-        req.prepare(msg, routes)
-
+        #req.prepare(msg, routes)
+        # --- TÁCH HEADER VÀ BODY ---
+        header_text = msg
+        body_text = ""
+        if '\r\n\r\n' in msg:
+            parts = msg.split('\r\n\r\n', 1)
+            header_text = parts[0]
+            if len(parts) > 1:
+                body_text = parts[1]
+        
+        req.prepare(header_text, routes) # Chỉ parse header
+        req.body = body_text # Gán body thủ công
+        
+        response = b"" # Khởi tạo response
         # Handle request hook
         if req.hook:
             print("[HttpAdapter] hook in route-path METHOD {} PATH {}".format(req.hook._route_path,req.hook._route_methods))
-            req.hook(headers = "bksysnet",body = "get in touch")
+            #req.hook(headers = "bksysnet",body = "get in touch")
             #
             # TODO: handle for App hook here
             #
+            # 1. Gọi hàm hook (ví dụ: login, hello) với headers và body đã parse
+            app_response_data = req.hook(headers=req.headers, body=req.body)
+            
+            # 2. Xử lý kết quả trả về từ hook
+            try:
+                # 3. Chuyển kết quả (thường là dict) thành chuỗi JSON
+                response_body_str = json.dumps(app_response_data)
+                resp._content = response_body_str.encode('utf-8')
+                resp.headers['Content-Type'] = 'application/json'
+                resp.status_code = 200 # Mặc định là 200 OK
+                resp.reason = "OK"
+            except Exception as e:
+                # Xử lý nếu hook trả về lỗi hoặc dữ liệu không phải JSON
+                print(f"[HttpAdapter] Error processing hook response: {e}")
+                resp._content = b'{"error": "Internal Server Error"}'
+                resp.headers['Content-Type'] = 'application/json'
+                resp.status_code = 500
+                resp.reason = "Internal Server Error"
+            
+            # 4. Xây dựng header và response cuối cùng
+            response = resp.build_response_header(req) + resp._content
 
-        # Build response
-        response = resp.build_response(req)
+        else:
+            # --- KHÔNG PHẢI HOOK ---
+            # 5. Nếu không phải hook, gọi hàm build_response để phục vụ file tĩnh
+            response = resp.build_response(req)
 
         #print(response)
         conn.sendall(response)
         conn.close()
+
 
     @property
     def extract_cookies(self, req, resp):

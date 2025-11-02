@@ -187,7 +187,6 @@ class Response():
             self.headers['Content-Type'] = 'image/x-icon'
         else:
             raise ValueError("Invalid MEME type: main_type={} sub_type={}".format(main_type,sub_type))
-
         return base_dir
 
 
@@ -326,6 +325,8 @@ class Response():
             return self.build_notfound()
 
         c_len, self._content = self.build_content(path, base_dir)
+        if c_len == 0:
+            return self.build_notfound()
         self._header = self.build_response_header(request)
 
         return self._header + self._content

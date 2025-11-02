@@ -104,6 +104,10 @@ class HttpAdapter:
 
         # Handle the request
         msg = conn.recv(1024).decode()
+        if not msg:
+            print("[HttpAdapter] Received an empty request. Closing connection.")
+            conn.close()
+            return
         #req.prepare(msg, routes)
         # --- TÁCH HEADER VÀ BODY ---
         header_text = msg
@@ -116,7 +120,22 @@ class HttpAdapter:
         
         req.prepare(header_text, routes) # Chỉ parse header
         req.body = body_text # Gán body thủ công
-        
+        is_authenticated = req.cookies.get('auth') == 'true'
+        allowed_paths = ['/login.html', '/login']
+
+        if not is_authenticated and req.path not in allowed_paths:
+            print(f"[HttpAdapter] Access denied for {req.path}. No auth cookie.")
+            # Trả về lỗi 401 Unauthorized
+            resp.status_code = 401
+            resp.reason = "Unauthorized"
+            resp.headers['Content-Type'] = 'text/html'
+            resp._content = b'<h1>401 Unauthorized</h1><p>You must log in to access this page.</p><a href="/login.html">Login</a>'
+
+            response = resp.build_response_header(req) + resp._content
+
+            conn.sendall(response)
+            conn.close()
+            return
         response = b"" # Khởi tạo response
         # Handle request hook
         if req.hook:
@@ -129,24 +148,28 @@ class HttpAdapter:
             app_response_data = req.hook(headers=req.headers, body=req.body)
             
             # 2. Xử lý kết quả trả về từ hook
-            try:
-                # 3. Chuyển kết quả (thường là dict) thành chuỗi JSON
-                response_body_str = json.dumps(app_response_data)
-                resp._content = response_body_str.encode('utf-8')
-                resp.headers['Content-Type'] = 'application/json'
-                resp.status_code = 200 # Mặc định là 200 OK
+            if app_response_data.get("login") == "success":
+                # ĐĂNG NHẬP THÀNH CÔNG
+                resp.status_code = 200
                 resp.reason = "OK"
-            except Exception as e:
-                # Xử lý nếu hook trả về lỗi hoặc dữ liệu không phải JSON
-                print(f"[HttpAdapter] Error processing hook response: {e}")
-                resp._content = b'{"error": "Internal Server Error"}'
-                resp.headers['Content-Type'] = 'application/json'
-                resp.status_code = 500
-                resp.reason = "Internal Server Error"
-            
-            # 4. Xây dựng header và response cuối cùng
-            response = resp.build_response_header(req) + resp._content
+                # Thêm header Set-Cookie
+                resp.headers['Set-Cookie'] = 'auth=true; Path=/; HttpOnly'
+                # (Tùy chọn) Trả về trang index thay vì JSON
+                # req.path = '/index.html' 
+                # response = resp.build_response(req) # <-- Dùng cái này nếu muốn trả về file
 
+                # Hoặc đơn giản là trả về JSON
+                resp.headers['Content-Type'] = 'application/json'
+                resp._content = b'{"status": "Login successful, cookie set"}'
+                response = resp.build_response_header(req) + resp._content
+
+            else:
+                # ĐĂNG NHẬP THẤT BẠI (hoặc hook khác)
+                resp.status_code = 401 # Lỗi Unauthorized
+                resp.reason = "Unauthorized"
+                resp.headers['Content-Type'] = 'application/json'
+                resp._content = b'{"status": "Login failed"}'
+                response = resp.build_response_header(req) + resp._content
         else:
             # --- KHÔNG PHẢI HOOK ---
             # 5. Nếu không phải hook, gọi hàm build_response để phục vụ file tĩnh

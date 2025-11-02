@@ -27,6 +27,7 @@ and can be configured via command-line arguments.
 import json
 import socket
 import argparse
+import urllib.parse
 
 from daemon.weaprous import WeApRous
 
@@ -35,18 +36,39 @@ PORT = 8000  # Default port
 app = WeApRous()
 
 @app.route('/login', methods=['POST'])
-def login(headers="guest", body="anonymous"):
-    """
-    Handle user login via POST request.
+# def login(headers="guest", body="anonymous"):
+#     """
+#     Handle user login via POST request.
 
-    This route simulates a login process and prints the provided headers and body
-    to the console.
+#     This route simulates a login process and prints the provided headers and body
+#     to the console.
 
-    :param headers (str): The request headers or user identifier.
-    :param body (str): The request body or login payload.
-    """
-    print ("[SampleApp] Logging in {} to {}".format(headers, body))
+#     :param headers (str): The request headers or user identifier.
+#     :param body (str): The request body or login payload.
+#     """
+#     print ("[SampleApp] Logging in {} to {}".format(headers, body))
+def login(headers, body):
+    print(f"[SampleApp] Raw login body: {body}")
 
+    credentials = {}
+    try:
+        # Phân tích chuỗi query (ví dụ: "username=admin&password=password")
+        parsed_body = urllib.parse.parse_qs(body)
+        credentials['username'] = parsed_body.get('username', [''])[0]
+        credentials['password'] = parsed_body.get('password', [''])[0]
+    except Exception as e:
+        print(f"Error parsing body: {e}")
+        return {"login": "failed", "reason": "Bad request"}
+
+    #Kiểm tra credentials
+    if credentials['username'] == 'admin' and credentials['password'] == 'password':
+        print("[SampleApp] Login successful")
+       
+        return {"login": "success"}
+    else:
+        print("[SampleApp] Login failed")
+       
+        return {"login": "failed", "reason": "Invalid credentials"}
 @app.route('/hello', methods=['PUT'])
 def hello(headers, body):
     """

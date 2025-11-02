@@ -218,59 +218,37 @@ class Response():
             print("[Response] Error reading file {}: {}".format(filepath, e))
             return 0, b""
 
+ # Trong file daemon/response.py
+
     def build_response_header(self, request):
         """
         Constructs the HTTP response headers based on the class:`Request <Request>
         and internal attributes.
-
-        :params request (class:`Request <Request>`): incoming request object.
-
-        :rtypes bytes: encoded HTTP response header.
         """
         reqhdr = request.headers
-        rsphdr = self.headers
-        # Set default status if not provided (e.g., by a hook)
+
+        # Set default status if not provided
         if not self.status_code:
             self.status_code = 200
         if not self.reason:
-            self.reason = "OK" 
-        #Build dynamic headers
-        headers = {
-                "Accept": "{}".format(reqhdr.get("Accept", "application/json")),
-                "Accept-Language": "{}".format(reqhdr.get("Accept-Language", "en-US,en;q=0.9")),
-                "Authorization": "{}".format(reqhdr.get("Authorization", "Basic <credentials>")),
-                "Cache-Control": "no-cache",
-                "Content-Type": "{}".format(self.headers['Content-Type']),
-                "Content-Length": "{}".format(len(self._content)),
-#                "Cookie": "{}".format(reqhdr.get("Cookie", "sessionid=xyz789")), #dummy cooki
-        #
-        # TODO prepare the request authentication
-        #
-	# self.auth = ...
-                "Date": "{}".format(datetime.datetime.utcnow().strftime("%a, %d %b %Y %H:%M:%S GMT")),
-                "Max-Forward": "10",
-                "Pragma": "no-cache",
-                "Proxy-Authorization": "Basic dXNlcjpwYXNz",  # example base64
-                "Warning": "199 Miscellaneous warning",
-                "User-Agent": "{}".format(reqhdr.get("User-Agent", "Chrome/123.0.0.0")),
-            }
+            self.reason = "OK"
 
-        # Header text alignment
-            #
-            #  TODO: implement the header building to create formated
-            #        header from the provied headers
-            #
-        # Start with the status line
+        self.headers["Content-Length"] = "{}".format(len(self._content))
+        self.headers["Date"] = "{}".format(datetime.datetime.utcnow().strftime("%a, %d %b %Y %H:%M:%S GMT"))
+        self.headers["Cache-Control"] = "no-cache"
+        self.headers["Pragma"] = "no-cache"
+        self.headers["Connection"] = "close"
+
+        # Bắt đầu xây dựng chuỗi header
         fmt_header = "HTTP/1.1 {} {}\r\n".format(self.status_code, self.reason)
 
-        # Add all key-value pairs from the headers dictionary
-        for key, value in headers.items():
+        # Lặp qua TẤT CẢ các header trong self.headers
+        for key, value in self.headers.items():
             fmt_header += "{}: {}\r\n".format(key, value)
-        #
-        # TODO prepare the request authentication
-        #
-	# self.auth = ...
+
+        # Thêm dòng trống cuối cùng
         fmt_header += "\r\n"
+
         return str(fmt_header).encode('utf-8')
 
 

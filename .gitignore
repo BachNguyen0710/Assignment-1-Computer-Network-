@@ -1,1 +1,12 @@
-/daemon/__pycache__/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.cache/
+tmp/
+temp/
+
+.env
+*.env
+
+*.log

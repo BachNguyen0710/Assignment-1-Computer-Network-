@@ -24,6 +24,7 @@ HTTP requests. The application includes a login endpoint and a greeting endpoint
 and can be configured via command-line arguments.
 """
 
+import json
 import argparse
 import urllib.parse
 import random
@@ -37,8 +38,7 @@ PORT = 8000  # Default port
 
 app = WeApRous()
 
-# Cái DB nèe
-session_store = {}
+session_store = {"F3HuVCtKXrAJ9QxVaG1hUMJ7zfDYmYHq": "baodang"}
 
 user_database = {"baodang": "123", "nguyenbao": "456", "tienbach": "789"}
 
@@ -75,11 +75,35 @@ def login(headers, body, authenticated_user=None):
         return {"login": "failed", "reason": "Invalid credentials"}
 
 
-@app.route("/register", methods=["GET"])
+@app.route("/register", methods=["POST"])
 def register_peer(headers, body):
-    print(headers)
-    cookies = extract_cookies(headers)
-    print(cookies)
+    try:
+        cookies = extract_cookies(headers)
+        if not cookies or not cookies.get("session_id"):
+            return {"status": "failed", "reason": "unauthorized"}
+
+        username = session_store[cookies.get("session_id")]
+        data = json.loads(body)
+        ip = data.get("ip")
+        port = int(data.get("port"))
+
+        if not (username and ip and port):
+            return {"status": "failed", "reason": "unauthorized"}
+
+        with peers_lock:
+            active_peers[username] = {"ip": ip, "port": port}
+
+        print(f"[SampleApp] Registered peer: {username} at {ip}:{port}")
+    except Exception as e:
+        print(f"[SampleApp] Peer registration failed: {e}")
+        return {"status": "failed", "reason": str(e)}
+
+
+@app.route("/get-peers", methods=["GET"])
+def get_peers(headers, body):
+    print("[SampleApp] Request for peer list")
+    with peers_lock:
+        return active_peers.copy()
 
 
 @app.route("/hello", methods=["PUT"])

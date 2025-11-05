@@ -10,19 +10,31 @@
 # while attending the course
 #
 
-from urlparse import urlparse
+# from urlparse import urlparse
 
-def get_auth_from_url(url):
-    """Given a url with authentication components, extract them into a tuple of
-    username,password.
 
-    :rtype: (str,str)
-    """
-    parsed = urlparse(url)
+def extract_cookies(headers):
+    cookies = {}
+    print(type(headers))
+    for header, value in headers.items():
+        if header == "cookie":
+            for pair in value.split(";"):
+                key, value = pair.strip().split("=")
+                cookies[key] = value
+    return cookies
 
-    try:
-        auth = (unquote(parsed.username), unquote(parsed.password))
-    except (AttributeError, TypeError):
-        auth = ("", "")
 
-    return auth
+# def get_auth_from_url(url):
+#     """Given a url with authentication components, extract them into a tuple of
+#     username,password.
+#
+#     :rtype: (str,str)
+#     """
+#     parsed = urlparse(url)
+#
+#     try:
+#         auth = (unquote(parsed.username), unquote(parsed.password))
+#     except (AttributeError, TypeError):
+#         auth = ("", "")
+#
+#     return auth

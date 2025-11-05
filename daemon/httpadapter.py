@@ -148,6 +148,14 @@ class HttpAdapter:
                         print("[HttpAdapter] Login successful, setting cookie.")
                         resp.status_code = 200
                         resp.set_cookie("auth", "true", options="Path=/; HttpOnly")
+                        session_id = app_resp.get("session_id")
+                        if session_id:
+                            print(
+                                f"[HttpAdapter] Setting session_id cookie: {session_id}"
+                            )
+                            resp.set_cookie(
+                                "session_id", session_id, options="Path=/; HttpOnly"
+                            )
                         resp_bytes = resp.build_json_response(req, app_resp)
                     else:
                         print("[HttpAdapter] Login failed.")
@@ -168,7 +176,7 @@ class HttpAdapter:
             conn.close()
 
     @property
-    def extract_cookies(self, req, resp):
+    def extract_cookies(self, headers):
         """
         Build cookies from the :class:`Request <Request>` headers.
 
@@ -178,7 +186,7 @@ class HttpAdapter:
         """
         cookies = {}
         for header in headers:
-            if header.startswith("Cookie:"):
+            if header.startswith("cookie:"):
                 cookie_str = header.split(":", 1)[1].strip()
                 for pair in cookie_str.split(";"):
                     key, value = pair.strip().split("=")

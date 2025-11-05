@@ -24,13 +24,13 @@ HTTP requests. The application includes a login endpoint and a greeting endpoint
 and can be configured via command-line arguments.
 """
 
-import json
-import socket
 import argparse
 import urllib.parse
 import random
 import string
+import threading
 
+from daemon.utils import extract_cookies
 from daemon.weaprous import WeApRous
 
 PORT = 8000  # Default port
@@ -41,6 +41,9 @@ app = WeApRous()
 session_store = {}
 
 user_database = {"baodang": "123", "nguyenbao": "456", "tienbach": "789"}
+
+active_peers = {}
+peers_lock = threading.Lock()
 
 
 @app.route("/login", methods=["POST"])
@@ -70,6 +73,13 @@ def login(headers, body, authenticated_user=None):
     else:
         print("[SampleApp] Login failed")
         return {"login": "failed", "reason": "Invalid credentials"}
+
+
+@app.route("/register", methods=["GET"])
+def register_peer(headers, body):
+    print(headers)
+    cookies = extract_cookies(headers)
+    print(cookies)
 
 
 @app.route("/hello", methods=["PUT"])

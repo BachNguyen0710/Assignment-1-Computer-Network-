@@ -38,7 +38,10 @@ PORT = 8000  # Default port
 
 app = WeApRous()
 
-session_store = {"F3HuVCtKXrAJ9QxVaG1hUMJ7zfDYmYHq": "baodang"}
+session_store = {
+    "F3HuVCtKXrAJ9QxVaG1hUMJ7zfDYmYHq": "baodang",
+    "gygmXiAH44xDR0JpNFFVywu1eBxbyyzP": "nguyenbao",
+}
 
 user_database = {"baodang": "123", "nguyenbao": "456", "tienbach": "789"}
 
@@ -68,6 +71,11 @@ def login(headers, body, authenticated_user=None):
         # Tạo 1 cookie/session_id ngẫu nhiên
         session_id = "".join(random.choices(string.ascii_letters + string.digits, k=32))
         session_store[session_id] = username
+        # hard code
+        if username == "nguyenbao":
+            session_id = "gygmXiAH44xDR0JpNFFVywu1eBxbyyzP"
+        elif username == "baodang":
+            session_id = "F3HuVCtKXrAJ9QxVaG1hUMJ7zfDYmYHq"
         return {"login": "success", "session_id": session_id}
 
     else:
@@ -94,6 +102,7 @@ def register_peer(headers, body):
             active_peers[username] = {"ip": ip, "port": port}
 
         print(f"[SampleApp] Registered peer: {username} at {ip}:{port}")
+        return {"status": "registered", "peer": username}
     except Exception as e:
         print(f"[SampleApp] Peer registration failed: {e}")
         return {"status": "failed", "reason": str(e)}

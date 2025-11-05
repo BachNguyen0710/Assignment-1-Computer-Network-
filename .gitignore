@@ -1,12 +1,3 @@
-daemon/__pycache__/
-*.pyc
-*.pyo
-*.pyd
-.cache/
-tmp/
-temp/
-
-.env
-*.env
-
-*.log
+# Created by venv; see https://docs.python.org/3/library/venv.html
+*
+chat_client.py

@@ -91,10 +91,7 @@ def resolve_routing_policy(hostname, routes):
     :params routes (dict): dictionary mapping hostnames and location.
     """
 
-    print(hostname)
     proxy_map, policy = routes.get(hostname, ("127.0.0.1:9000", "round-robin"))
-    print(proxy_map)
-    print(policy)
 
     proxy_host = ""
     proxy_port = "9000"

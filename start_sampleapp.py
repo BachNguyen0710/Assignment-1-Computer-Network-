@@ -40,12 +40,10 @@ app = WeApRous()
 # Cái DB nèe
 session_store = {}
 
-user_database = {
-    "baodang": "123",
-    "nguyenbao": "456",
-    "tienbach": "789"
-}
-@app.route('/login', methods=['POST'])
+user_database = {"baodang": "123", "nguyenbao": "456", "tienbach": "789"}
+
+
+@app.route("/login", methods=["POST"])
 def login(headers, body, authenticated_user=None):
     print(f"[SampleApp] Raw login body: {body}")
 
@@ -53,26 +51,28 @@ def login(headers, body, authenticated_user=None):
     try:
         # Phân tích chuỗi query (ví dụ: "username=admin&password=password")
         parsed_body = urllib.parse.parse_qs(body)
-        credentials['username'] = parsed_body.get('username', [''])[0]
-        credentials['password'] = parsed_body.get('password', [''])[0]
+        credentials["username"] = parsed_body.get("username", [""])[0]
+        credentials["password"] = parsed_body.get("password", [""])[0]
     except Exception as e:
         print(f"Error parsing body: {e}")
         return {"login": "failed", "reason": "Bad request"}
-    
-    username = credentials.get('username')
-    password = credentials.get('password')
-    #Kiểm tra credentials
+
+    username = credentials.get("username")
+    password = credentials.get("password")
+    # Kiểm tra credentials
     if username in user_database and user_database[username] == password:
         print(f"[SampleApp] Login successful for '{username}'")
-        #Tạo 1 cookie/session_id ngẫu nhiên
-        session_id = ''.join(random.choices(string.ascii_letters + string.digits, k=32))
+        # Tạo 1 cookie/session_id ngẫu nhiên
+        session_id = "".join(random.choices(string.ascii_letters + string.digits, k=32))
         session_store[session_id] = username
         return {"login": "success", "session_id": session_id}
-    
+
     else:
         print("[SampleApp] Login failed")
         return {"login": "failed", "reason": "Invalid credentials"}
-@app.route('/hello', methods=['PUT'])
+
+
+@app.route("/hello", methods=["PUT"])
 def hello(headers, body):
     """
     Handle greeting via PUT request.
@@ -83,14 +83,17 @@ def hello(headers, body):
     :param headers (str): The request headers or user identifier.
     :param body (str): The request body or message payload.
     """
-    print ("[SampleApp] ['PUT'] Hello in {} to {}".format(headers, body))
+    print("[SampleApp] ['PUT'] Hello in {} to {}".format(headers, body))
+
 
 if __name__ == "__main__":
     # Parse command-line arguments to configure server IP and port
-    parser = argparse.ArgumentParser(prog='Backend', description='', epilog='Beckend daemon')
-    parser.add_argument('--server-ip', default='0.0.0.0')
-    parser.add_argument('--server-port', type=int, default=PORT)
- 
+    parser = argparse.ArgumentParser(
+        prog="Backend", description="", epilog="Beckend daemon"
+    )
+    parser.add_argument("--server-ip", default="0.0.0.0")
+    parser.add_argument("--server-port", type=int, default=PORT)
+
     args = parser.parse_args()
     ip = args.server_ip
     port = args.server_port

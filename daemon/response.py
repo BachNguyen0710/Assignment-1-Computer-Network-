@@ -14,12 +14,14 @@
 daemon.response
 ~~~~~~~~~~~~~~~~~
 
-This module provides a :class: `Response <Response>` object to manage and persist 
+This module provides a :class: `Response <Response>` object to manage and persist
 response settings (cookies, auth, proxies), and to construct HTTP responses
-based on incoming requests. 
+based on incoming requests.
 
 The current version supports MIME type detection, content loading and header formatting
 """
+
+import json
 import datetime
 import os
 import mimetypes
@@ -27,7 +29,8 @@ from .dictionary import CaseInsensitiveDict
 
 BASE_DIR = ""
 
-class Response():   
+
+class Response:
     """The :class:`Response <Response>` object, which contains a
     server's response to an HTTP request.
 
@@ -35,7 +38,7 @@ class Response():
     should not be instantiated manually; doing so may produce undesirable
     effects.
 
-    :class:`Response <Response>` object encapsulates headers, content, 
+    :class:`Response <Response>` object encapsulates headers, content,
     status code, cookies, and metadata related to the request-response cycle.
     It is used to construct and serve HTTP responses in a custom web server.
 
@@ -75,7 +78,6 @@ class Response():
         "reason",
     ]
 
-
     def __init__(self, request=None):
         """
         Initializes a new :class:`Response <Response>` object.
@@ -83,12 +85,14 @@ class Response():
         : params request : The originating request object.
         """
 
-        self._content = False
+        # self._content = False
+        self._content = b""
         self._content_consumed = False
         self._next = None
 
         #: Integer Code of responded HTTP Status, e.g. 404 or 200.
-        self.status_code = None
+        # self.status_code = None
+        self.status_code = 200
 
         #: Case-insensitive Dictionary of Response Headers.
         #: For example, ``headers['content-type']`` will return the
@@ -99,14 +103,16 @@ class Response():
         self.url = None
 
         #: Encoding to decode with when accessing response text.
-        self.encoding = None
+        # self.encoding = None
+        self.encoding = "utf-8"
 
         #: A list of :class:`Response <Response>` objects from
         #: the history of the Request.
         self.history = []
 
         #: Textual reason of responded HTTP Status, e.g. "Not Found" or "OK".
-        self.reason = None
+        # self.reason = None
+        self.reason = "OK"
 
         #: A of Cookies the response headers.
         self.cookies = CaseInsensitiveDict()
@@ -117,7 +123,6 @@ class Response():
         #: The :class:`PreparedRequest <PreparedRequest>` object to which this
         #: is a response.
         self.request = None
-
 
     def get_mime_type(self, path):
         """
@@ -131,11 +136,10 @@ class Response():
         try:
             mime_type, _ = mimetypes.guess_type(path)
         except Exception:
-            return 'application/octet-stream'
-        return mime_type or 'application/octet-stream'
+            return "application/octet-stream"
+        return mime_type or "application/octet-stream"
 
-
-    def prepare_content_type(self, mime_type='text/html'):
+    def prepare_content_type(self, mime_type="text/html"):
         """
         Prepares the Content-Type header and determines the base directory
         for serving the file based on its MIME type.
@@ -146,49 +150,58 @@ class Response():
 
         :raises ValueError: If the MIME type is unsupported.
         """
-        
+
         base_dir = ""
 
         # Processing mime_type based on main_type and sub_type
-        main_type, sub_type = mime_type.split('/', 1)
-        print("[Response] processing MIME main_type={} sub_type={}".format(main_type,sub_type))
-        if main_type == 'text':
-            self.headers['Content-Type']='text/{}'.format(sub_type)
-            if sub_type == 'plain' or sub_type == 'css':
-                base_dir = BASE_DIR+"static/"
-            elif sub_type == 'html':
-                base_dir = BASE_DIR+"www/"
+        main_type, sub_type = mime_type.split("/", 1)
+        print(
+            "[Response] processing MIME main_type={} sub_type={}".format(
+                main_type, sub_type
+            )
+        )
+        if main_type == "text":
+            self.headers["Content-Type"] = "text/{}".format(sub_type)
+            if sub_type == "plain" or sub_type == "css":
+                base_dir = BASE_DIR + "static/"
+            elif sub_type == "html":
+                base_dir = BASE_DIR + "www/"
             else:
                 # TODO: handle_text_other(sub_type)
-                base_dir = BASE_DIR+"static/"
-        elif main_type == 'image':
-            base_dir = BASE_DIR+"static/"
-            self.headers['Content-Type']='image/{}'.format(sub_type)
-        elif main_type == 'application':
-            base_dir = BASE_DIR+"apps/"
-            self.headers['Content-Type']='application/{}'.format(sub_type)
+                base_dir = BASE_DIR + "static/"
+        elif main_type == "image":
+            base_dir = BASE_DIR + "static/"
+            self.headers["Content-Type"] = "image/{}".format(sub_type)
+        elif main_type == "application":
+            base_dir = BASE_DIR + "apps/"
+            self.headers["Content-Type"] = "application/{}".format(sub_type)
         #
         #  TODO: process other mime_type
-        #        application/xml       
+        #        application/xml
         #        application/zip
         #        ...
         #        text/csv
         #        text/xml
         #        ...
-        #        video/mp4 
+        #        video/mp4
         #        video/mpeg
         #        ...
         #
-        elif main_type == 'video':
-            base_dir = BASE_DIR+"static/"
-            self.headers['Content-Type']='video/{}'.format(sub_type)
-        elif mime_type == 'image/x-icon':
-            base_dir = BASE_DIR+"static/"
-            self.headers['Content-Type'] = 'image/x-icon'
+        elif main_type == "video":
+            base_dir = BASE_DIR + "static/"
+            self.headers["Content-Type"] = "video/{}".format(sub_type)
+        elif mime_type == "image/x-icon":
+            base_dir = BASE_DIR + "static/"
+            self.headers["Content-Type"] = "image/x-icon"
         else:
-            raise ValueError("Invalid MEME type: main_type={} sub_type={}".format(main_type,sub_type))
+            # raise ValueError(
+            #     "Invalid MEME type: main_type={} sub_type={}".format(
+            #         main_type, sub_type
+            #     )
+            # )
+            self.headers["Content-Type"] = "application/octet-stream"
+            base_dir = BASE_DIR + "static/"
         return base_dir
-
 
     def build_content(self, path, base_dir):
         """
@@ -200,25 +213,31 @@ class Response():
         :rtype tuple: (int, bytes) representing content length and content data.
         """
 
-        filepath = os.path.join(base_dir, path.lstrip('/'))
+        filepath = os.path.join(base_dir, path.lstrip("/"))
 
         print("[Response] serving the object at location {}".format(filepath))
-            #
-            #  TODO: implement the step of fetch the object file
-            #        store in the return value of content
-            #
+        #
+        #  TODO: implement the step of fetch the object file
+        #        store in the return value of content
+        #
         try:
-            with open(filepath, 'rb') as f:
+            with open(filepath, "rb") as f:
                 content = f.read()
             return len(content), content
         except FileNotFoundError:
             print("[Response] file not found at location {}".format(filepath))
-            return 0, b''
+            return 0, b""
         except Exception as e:
             print("[Response] Error reading file {}: {}".format(filepath, e))
             return 0, b""
 
- # Trong file daemon/response.py
+    def set_cookie(self, key, value, options=""):
+        cookie_val = f"{key}={value}"
+        if options:
+            cookie_val += f"; {options}"
+        self.headers["Set-Cookie"] = cookie_val
+
+    # Trong file daemon/response.py
 
     def build_response_header(self, request):
         """
@@ -228,13 +247,19 @@ class Response():
         reqhdr = request.headers
 
         # Set default status if not provided
-        if not self.status_code:
-            self.status_code = 200
-        if not self.reason:
-            self.reason = "OK"
+        if self.status_code == 200 and self.reason == "OK":
+            pass  # Use default
+        elif self.status_code == 404:
+            self.reason = "Not Found"
+        elif self.status_code == 401:
+            self.reason = "Unauthorized"
+        elif self.status_code == 302:
+            self.reason = "Found"
 
         self.headers["Content-Length"] = "{}".format(len(self._content))
-        self.headers["Date"] = "{}".format(datetime.datetime.utcnow().strftime("%a, %d %b %Y %H:%M:%S GMT"))
+        self.headers["Date"] = "{}".format(
+            datetime.datetime.utcnow().strftime("%a, %d %b %Y %H:%M:%S GMT")
+        )
         self.headers["Cache-Control"] = "no-cache"
         self.headers["Pragma"] = "no-cache"
         self.headers["Connection"] = "close"
@@ -249,8 +274,7 @@ class Response():
         # Thêm dòng trống cuối cùng
         fmt_header += "\r\n"
 
-        return str(fmt_header).encode('utf-8')
-
+        return str(fmt_header).encode("utf-8")
 
     def build_notfound(self):
         """
@@ -260,16 +284,44 @@ class Response():
         """
 
         return (
-                "HTTP/1.1 404 Not Found\r\n"
-                "Accept-Ranges: bytes\r\n"
-                "Content-Type: text/html\r\n"
-                "Content-Length: 13\r\n"
-                "Cache-Control: max-age=86000\r\n"
-                "Connection: close\r\n"
-                "\r\n"
-                "404 Not Found"
-            ).encode('utf-8')
+            "HTTP/1.1 404 Not Found\r\n"
+            "Accept-Ranges: bytes\r\n"
+            "Content-Type: text/html\r\n"
+            "Content-Length: 13\r\n"
+            "Cache-Control: max-age=86000\r\n"
+            "Connection: close\r\n"
+            "\r\n"
+            "404 Not Found"
+        ).encode("utf-8")
 
+    def build_unauthorized(self, request, login_page="/login"):
+        self.status_code = 401
+        self.reason = "Unauthorized"
+        self.headers["Content-Type"] = "text/html"
+        self._content = f'<h1>401 Unauthorized</h1><p>You must log in to access this page.</p><a href="{
+            login_page
+        }">Login</a>'.encode("utf-8")
+        print(self.headers, "Header")
+
+        self._header = self.build_response_header(request)
+        return self._header + self._content
+
+    def build_json_response(self, request, data_dict):
+        try:
+            content_str = json.dumps(data_dict)
+            self._content = content_str.encode("utf-8")
+            self.headers["Content-Type"] = "application/json"
+        except Exception as e:
+            self.status_code = 500
+            self.reason = "Internal Server Error"
+            content_str = json.dumps(
+                {"error": "Failed to serialize response", "detail": str(e)}
+            )
+            self._content = content_str.encode("utf-8")
+            self.headers["Content-Type"] = "application/json"
+
+        self._header = self.build_response_header(request)
+        return self._header + self._content
 
     def build_response(self, request):
         """
@@ -283,22 +335,26 @@ class Response():
         path = request.path
 
         mime_type = self.get_mime_type(path)
-        print("[Response] {} path {} mime_type {}".format(request.method, request.path, mime_type))
+        print(
+            "[Response] {} path {} mime_type {}".format(
+                request.method, request.path, mime_type
+            )
+        )
 
         base_dir = ""
 
-        #If HTML, parse and serve embedded objects
-        if path.endswith('.html') or mime_type == 'text/html':
-            base_dir = self.prepare_content_type(mime_type = 'text/html')
-        elif mime_type == 'text/css':
-            base_dir = self.prepare_content_type(mime_type = 'text/css')
+        # If HTML, parse and serve embedded objects
+        if path.endswith(".html") or mime_type == "text/html":
+            base_dir = self.prepare_content_type(mime_type="text/html")
+        elif mime_type == "text/css":
+            base_dir = self.prepare_content_type(mime_type="text/css")
         #
         # TODO: add support objects
         #
-        elif mime_type in ['image', 'video', 'application']:
-            base_dir = self.prepare_content_type(mime_type = mime_type)
-        elif path.endswith('favicon.ico'):
-             base_dir = self.prepare_content_type(mime_type = 'image/x-icon')
+        elif mime_type in ["image", "video", "application"]:
+            base_dir = self.prepare_content_type(mime_type=mime_type)
+        elif path.endswith("favicon.ico"):
+            base_dir = self.prepare_content_type(mime_type="image/x-icon")
         else:
             return self.build_notfound()
 

@@ -84,7 +84,7 @@ class WeApRous:
             return func
         return decorator
 
-    def run(self):
+    def run(self, session_store={}):
         """
         Start the backend server and begin handling requests.
 
@@ -96,6 +96,7 @@ class WeApRous:
         if not self.ip or not self.port:
             print("Rous app need to preapre address"
                   "by calling app.prepare_address(ip,port)")
+            return
 
-        create_backend(self.ip, self.port, self.routes)
+        create_backend(self.ip, self.port, self.routes, session_store=session_store)
         

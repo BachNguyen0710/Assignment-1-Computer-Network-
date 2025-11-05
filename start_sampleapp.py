@@ -28,6 +28,8 @@ import json
 import socket
 import argparse
 import urllib.parse
+import random
+import string
 
 from daemon.weaprous import WeApRous
 
@@ -35,19 +37,16 @@ PORT = 8000  # Default port
 
 app = WeApRous()
 
+# Cái DB nèe
+session_store = {}
+
+user_database = {
+    "baodang": "123",
+    "nguyenbao": "456",
+    "tienbach": "789"
+}
 @app.route('/login', methods=['POST'])
-# def login(headers="guest", body="anonymous"):
-#     """
-#     Handle user login via POST request.
-
-#     This route simulates a login process and prints the provided headers and body
-#     to the console.
-
-#     :param headers (str): The request headers or user identifier.
-#     :param body (str): The request body or login payload.
-#     """
-#     print ("[SampleApp] Logging in {} to {}".format(headers, body))
-def login(headers, body):
+def login(headers, body, authenticated_user=None):
     print(f"[SampleApp] Raw login body: {body}")
 
     credentials = {}
@@ -59,15 +58,19 @@ def login(headers, body):
     except Exception as e:
         print(f"Error parsing body: {e}")
         return {"login": "failed", "reason": "Bad request"}
-
+    
+    username = credentials.get('username')
+    password = credentials.get('password')
     #Kiểm tra credentials
-    if credentials['username'] == 'admin' and credentials['password'] == 'password':
-        print("[SampleApp] Login successful")
-       
-        return {"login": "success"}
+    if username in user_database and user_database[username] == password:
+        print(f"[SampleApp] Login successful for '{username}'")
+        #Tạo 1 cookie/session_id ngẫu nhiên
+        session_id = ''.join(random.choices(string.ascii_letters + string.digits, k=32))
+        session_store[session_id] = username
+        return {"login": "success", "session_id": session_id}
+    
     else:
         print("[SampleApp] Login failed")
-       
         return {"login": "failed", "reason": "Invalid credentials"}
 @app.route('/hello', methods=['PUT'])
 def hello(headers, body):
@@ -94,4 +97,4 @@ if __name__ == "__main__":
 
     # Prepare and launch the RESTful application
     app.prepare_address(ip, port)
-    app.run()
+    app.run(session_store=session_store)

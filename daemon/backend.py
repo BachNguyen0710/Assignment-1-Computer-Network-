@@ -14,7 +14,7 @@
 daemon.backend
 ~~~~~~~~~~~~~~~~~
 
-This module provides a backend object to manage and persist backend daemon. 
+This module provides a backend object to manage and persist backend daemon.
 It implements a basic backend server using Python's socket and threading libraries.
 It supports handling multiple client connections concurrently and routing requests using a
 custom HTTP adapter.
@@ -48,7 +48,8 @@ from .response import *
 from .httpadapter import HttpAdapter
 from .dictionary import CaseInsensitiveDict
 
-def handle_client(ip, port, conn, addr, routes, session_store={}):
+
+def handle_client(ip, port, conn, addr, routes):
     """
     Initializes an HttpAdapter instance and delegates the client handling logic to it.
 
@@ -58,12 +59,13 @@ def handle_client(ip, port, conn, addr, routes, session_store={}):
     :param addr (tuple): client address (IP, port).
     :param routes (dict): Dictionary of route handlers.
     """
-    daemon = HttpAdapter(ip, port, conn, addr, routes, session_store)
+    daemon = HttpAdapter(ip, port, conn, addr, routes)
 
     # Handle client
-    daemon.handle_client(conn, addr, routes, session_store)
+    daemon.handle_client(conn, addr, routes)
 
-def run_backend(ip, port, routes, session_store):
+
+def run_backend(ip, port, routes):
     """
     Starts the backend server, binds to the specified IP and port, and listens for incoming
     connections. Each connection is handled in a separate thread. The backend accepts incoming
@@ -90,13 +92,16 @@ def run_backend(ip, port, routes, session_store):
             #        using multi-thread programming with the
             #        provided handle_client routine
             #
-            client_thread = threading.Thread(target = handle_client, args=(ip, port, conn, addr, routes, session_store))
+            client_thread = threading.Thread(
+                target=handle_client, args=(ip, port, conn, addr, routes)
+            )
             client_thread.daemon = True
             client_thread.start()
     except socket.error as e:
-      print("Socket error: {}".format(e))
+        print("Socket error: {}".format(e))
 
-def create_backend(ip, port, routes={}, session_store={}):
+
+def create_backend(ip, port, routes={}):
     """
     Entry point for creating and running the backend server.
 
@@ -105,4 +110,4 @@ def create_backend(ip, port, routes={}, session_store={}):
     :param routes (dict, optional): Dictionary of route handlers. Defaults to empty dict.
     """
 
-    run_backend(ip, port, routes, session_store)
+    run_backend(ip, port, routes)

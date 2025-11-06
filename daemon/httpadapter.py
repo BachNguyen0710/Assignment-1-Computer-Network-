@@ -58,7 +58,7 @@ class HttpAdapter:
         "response",
     ]
 
-    def __init__(self, ip, port, conn, connaddr, routes, session_store):
+    def __init__(self, ip, port, conn, connaddr, routes):
         """
         Initialize a new HttpAdapter instance.
 
@@ -83,9 +83,8 @@ class HttpAdapter:
         self.request = Request()
         #: Response
         self.response = Response()
-        self.session_store = session_store
 
-    def handle_client(self, conn, addr, routes, session_store):
+    def handle_client(self, conn, addr, routes):
         """
         Handle an incoming client connection.
 
@@ -120,9 +119,20 @@ class HttpAdapter:
                 conn.close()
                 return
 
+            # support cors
+            origin = req.headers.get("origin")
+            if origin:
+                resp.headers["Access-Control-Allow-Origin"] = origin
+                resp.headers["Access-Control-Allow-Credentials"] = "true"
+                resp.headers["Access-Control-Allow-Methods"] = "GET, POST, OPTIONS"
+                resp.headers["Access-Control-Allow-Headers"] = "Content-Type"
+            # end of support cors
+
             response_bytes = b""
             if req.path in protected_paths:
+                # Task 1
                 if req.cookies.get("auth") != "true":
+                    # if not req.cookies.get("session_id"):
                     print(f"[HttpAdapter] Access denied for {addr[0]}. No auth cookie.")
                     response_bytes = resp.build_unauthorized(
                         req, login_page="/login.html"
@@ -137,7 +147,7 @@ class HttpAdapter:
                         req.path
                     }"
                 )
-
+                req.headers["_conn_addr"] = self.connaddr
                 app_resp = req.hook(headers=req.headers, body=req.body)
 
                 if req.path == "/login" and req.method == "POST":
@@ -146,6 +156,7 @@ class HttpAdapter:
                         and app_resp.get("login") == "success"
                     ):
                         print("[HttpAdapter] Login successful, setting cookie.")
+                        # task 1
                         resp.status_code = 200
                         resp.set_cookie("auth", "true", options="Path=/; HttpOnly")
                         session_id = app_resp.get("session_id")
@@ -162,7 +173,10 @@ class HttpAdapter:
                         resp.status_code = 401
                         resp_bytes = resp.build_json_response(req, app_resp)
                 else:
-                    resp.status_code = 200
+                    if app_resp.get("status", "") == "failed":
+                        resp.status_code = 404
+                    else:
+                        resp.status_code = 200
                     resp_bytes = resp.build_json_response(req, app_resp)
             else:
                 print(f"[HttpAdapter] No hook found. Serving static file: {req.path}")

@@ -1,21 +1,345 @@
 <!doctype html>
 <html>
-<head>
-    <title>bksysnet@hcmut welcome</title>
 
-    <meta charset="utf-8" />
-    <meta http-equiv="Content-type" content="text/html; charset=utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <link rel="stylesheet" href="css/styles.css" />
+<head>
+  <title>WeApRous Chat Monitor</title>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <!-- <link rel="stylesheet" href="css/styles.css" /> <-- Make sure this is commented out or deleted -->
+  <style>
+    body {
+      font-family: -apple-system, system-ui, BlinkMacSystemFont, "Segoe UI", "Open Sans", "Helvetica Neue", Helvetica, Arial, sans-serif;
+      background-color: #f0f0f2;
+      margin: 0;
+      padding: 0;
+    }
+
+    header {
+      background-color: #38488f;
+      color: white;
+      padding: 1em;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    header h1 {
+      margin: 0;
+      font-size: 1.5em;
+    }
+
+    #user-status {
+      text-align: right;
+    }
+
+    .container {
+      display: flex;
+      margin: 2em auto;
+      width: 90%;
+      max-width: 1200px;
+      background: white;
+      border-radius: 0.5em;
+      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+      min-height: 60vh;
+    }
+
+    .sidebar {
+      width: 30%;
+      border-right: 1px solid #f0f0f2;
+      padding: 1.5em;
+    }
+
+    .main-content {
+      width: 70%;
+      padding: 1.5em;
+    }
+
+    h2 {
+      margin-top: 0;
+      border-bottom: 2px solid #f0f0f2;
+      padding-bottom: 10px;
+    }
+
+    ul {
+      list-style-type: none;
+      padding: 0;
+    }
+
+    #channel-list li {
+      padding: 12px;
+      cursor: pointer;
+      border-radius: 5px;
+      font-weight: 500;
+    }
+
+    #channel-list li.selected {
+      background-color: #e0e7ff;
+      color: #38488f;
+    }
+
+    #channel-list li:hover {
+      background-color: #f0f0f2;
+    }
+
+    #peer-list li {
+      background: #f9f9f9;
+      padding: 10px;
+      border-radius: 4px;
+      margin-bottom: 8px;
+      font-family: 'Courier New', Courier, monospace;
+    }
+
+    #peer-list li strong {
+      color: #38488f;
+    }
+
+    .form-group {
+      margin-top: 20px;
+    }
+
+    input[type="text"] {
+      width: calc(100% - 80px);
+      padding: 8px;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+    }
+
+    button {
+      padding: 9px 15px;
+      background-color: #38488f;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+
+    button:hover {
+      background-color: #2c3870;
+    }
+
+    #join-channel-btn {
+      background-color: #28a745;
+      width: 100%;
+      margin-top: 10px;
+    }
+
+    #join-channel-btn:hover {
+      background-color: #218838;
+    }
+
+    #quit-channel-btn {
+      background-color: #c9302c;
+      width: 100%;
+      margin-top: 10px;
+    }
+
+    #quit-channel-btn:hover {
+      background-color: #a52824;
+    }
+  </style>
 </head>
 
 <body>
-<div>
-    <h1>bksysnet@hcmut  Domain</h1>
-    <p>This domain is for use in illustrative examples in documents.
-    </p>
-  
-       <img src="images/welcome.png" alt="bksysnet at HCMUT" width="500" height="600">  
-</div>
+  <header>
+    <h1>WeApRous Chat Monitor</h1>
+    <div id="user-status">
+      Viewing as: <strong id="username">...</strong><br>
+      Current Channel: <strong id="current-channel">...</strong>
+    </div>
+  </header>
+
+  <div class="container" id="chat-ui">
+    <div class="sidebar">
+      <h2>Channels</h2>
+      <ul id="channel-list"></ul>
+      <button id="join-channel-btn">Join Selected Channel</button>
+      <button id="quit-channel-btn">Leave Channel (Join Global)</button>
+      <div class="form-group">
+        <form id="create-channel-form">
+          <input type="text" id="new-channel-name" placeholder="New channel name..." required>
+          <button type="submit">Create</button>
+        </form>
+      </div>
+    </div>
+    <div class="main-content">
+      <h2 id="peer-list-header">Peers in Channel</h2>
+      <ul id="peer-list">
+        <!-- Peer list will be populated by JS -->
+      </ul>
+    </div>
+  </div>
+
+  <!-- Registration overlay is GONE -->
+
+  <script>
+    const API_URL = ""
+    let myUsername = "";
+    let myCurrentChannel = "";
+    let selectedChannel = "";
+
+    const ui = {
+      chatUI: document.getElementById('chat-ui'),
+      usernameLabel: document.getElementById('username'),
+      currentChannelLabel: document.getElementById('current-channel'),
+      channelList: document.getElementById('channel-list'),
+      peerList: document.getElementById('peer-list'),
+      peerListHeader: document.getElementById('peer-list-header'),
+      createChannelForm: document.getElementById('create-channel-form'),
+      newChannelInput: document.getElementById('new-channel-name'),
+      joinChannelBtn: document.getElementById('join-channel-btn'),
+      quitChannelBtn: document.getElementById('quit-channel-btn')
+    };
+
+    async function apiRequest(endpoint, method = 'GET', body = null) {
+      const options = {
+        method: method,
+        headers: {},
+        credentials: 'include'
+      };
+      if (body) {
+        options.headers['Content-Type'] = 'application/json';
+        options.body = JSON.stringify(body);
+      }
+      try {
+        const response = await fetch(`${API_URL}${endpoint}`, options);
+        if (!response.ok) {
+          let errorReason = `HTTP error! status: ${response.status}`;
+          try {const err = await response.json(); errorReason = err.reason || errorReason;} catch (e) { }
+          throw new Error(errorReason);
+        }
+        const text = await response.text();
+        return text ? JSON.parse(text) : {};
+      } catch (err) {
+        console.error("API Request Error:", err);
+        alert(`Error: ${err.message}`);
+        if (err.message.toLowerCase().includes("unauthorized") || err.message.includes("401")) {
+          window.location.href = 'login.html';
+        }
+        return null;
+      }
+    }
+
+    async function fetchMyStatus() {
+      const data = await apiRequest('/me');
+      if (!data) return;
+
+      if (data.status === 'unauthorized') {
+        window.location.href = 'login.html';
+        return;
+      }
+
+      myUsername = data.username;
+      myCurrentChannel = data.current_channel;
+      selectedChannel = data.current_channel;
+      ui.usernameLabel.textContent = myUsername;
+      ui.currentChannelLabel.textContent = myCurrentChannel;
+
+      ui.chatUI.style.display = 'flex';
+      await fetchAllChannels();
+    }
+
+    async function fetchAllChannels() {
+      const data = await apiRequest('/channels/list');
+      if (!data) return;
+
+      ui.channelList.innerHTML = '';
+      data.channels.forEach(channelName => {
+        const li = document.createElement('li');
+        li.textContent = channelName;
+        li.dataset.channel = channelName;
+        if (channelName === selectedChannel) {
+          li.className = 'selected';
+        }
+        li.onclick = () => selectChannel(channelName);
+        ui.channelList.appendChild(li);
+      });
+      await fetchChannelPeers(selectedChannel);
+    }
+
+    async function fetchChannelPeers(channelName) {
+      ui.peerListHeader.textContent = `Peers in '${channelName}'`;
+      const peers = await apiRequest('/channels/peers', 'POST', {channel_name: channelName});
+      if (!peers) return;
+
+      ui.peerList.innerHTML = '';
+      const usernames = Object.keys(peers);
+
+      if (usernames.length === 0) {
+        ui.peerList.innerHTML = '<li>No peers in this channel.</li>';
+        return;
+      }
+
+      usernames.forEach(username => {
+        const peerData = peers[username];
+        const li = document.createElement('li');
+
+
+        li.innerHTML = `<strong>${username}</strong><br>
+                                IP: ${peerData.ip} | Port: ${peerData.port}`;
+
+
+        if (username === myUsername) {
+          li.innerHTML += ' (You)';
+        }
+        ui.peerList.appendChild(li);
+      });
+    }
+
+    function selectChannel(channelName) {
+      if (channelName === selectedChannel) return;
+      selectedChannel = channelName;
+      document.querySelectorAll('#channel-list li').forEach(li => {
+        li.classList.toggle('selected', li.dataset.channel === channelName);
+      });
+      fetchChannelPeers(channelName);
+    }
+
+    async function handleJoinChannel() {
+      if (!selectedChannel || selectedChannel === myCurrentChannel) {
+        alert(`You are already viewing the '${selectedChannel}' channel.`);
+        return;
+      }
+      const data = await apiRequest('/channels/join', 'POST', {channel_name: selectedChannel});
+      if (data && data.status === 'joined') {
+        myCurrentChannel = data.channel;
+        ui.currentChannelLabel.textContent = myCurrentChannel;
+        alert(`You are now following '${myCurrentChannel}'!`);
+      }
+    }
+
+    async function createChannel(e) {
+      e.preventDefault();
+      const channelName = ui.newChannelInput.value.trim();
+      if (!channelName) return;
+
+      const data = await apiRequest('/channels/create', 'POST', {channel_name: channelName});
+      if (data && data.status === 'created') {
+        ui.newChannelInput.value = '';
+        await fetchAllChannels();
+        selectChannel(channelName);
+      }
+    }
+
+    async function quitChannel() {
+      if (myCurrentChannel === 'global') {
+        alert("You are already in the 'global' channel.");
+        return;
+      }
+      const data = await apiRequest('/channels/quit');
+      if (data && data.status === 'quited') {
+        myCurrentChannel = data.channel;
+        selectedChannel = data.channel;
+        ui.currentChannelLabel.textContent = myCurrentChannel;
+        await fetchAllChannels();
+      }
+    }
+
+    window.addEventListener('DOMContentLoaded', fetchMyStatus);
+    ui.createChannelForm.addEventListener('submit', createChannel);
+    ui.joinChannelBtn.addEventListener('click', handleJoinChannel);
+    ui.quitChannelBtn.addEventListener('click', quitChannel);
+  </script>
 </body>
+
 </html>

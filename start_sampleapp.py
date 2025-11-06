@@ -24,38 +24,43 @@ HTTP requests. The application includes a login endpoint and a greeting endpoint
 and can be configured via command-line arguments.
 """
 
-import json
 import argparse
-import urllib.parse
+import json
 import random
 import string
 import threading
+import urllib.parse
 
 from daemon.utils import extract_cookies
 from daemon.weaprous import WeApRous
+from db import database
 
 PORT = 8000  # Default port
 
 app = WeApRous()
 
-session_store = {
-    "F3HuVCtKXrAJ9QxVaG1hUMJ7zfDYmYHq": "baodang",
-    "gygmXiAH44xDR0JpNFFVywu1eBxbyyzP": "nguyenbao",
-}
 
-user_database = {"baodang": "123", "nguyenbao": "456", "tienbach": "789"}
+def check_registered_status(username):
+    if username in database.get_peers():
+        return True
+    return False
 
-active_peers = {}
-peers_lock = threading.Lock()
+
+def get_user_from_session(headers):
+    cookies = extract_cookies(headers)
+    if not cookies or not cookies.get("session_id"):
+        return None
+
+    username = database.get_username_by_session(cookies.get("session_id"))
+    return username
 
 
 @app.route("/login", methods=["POST"])
-def login(headers, body, authenticated_user=None):
+def login(headers, body):
     print(f"[SampleApp] Raw login body: {body}")
 
     credentials = {}
     try:
-        # Phân tích chuỗi query (ví dụ: "username=admin&password=password")
         parsed_body = urllib.parse.parse_qs(body)
         credentials["username"] = parsed_body.get("username", [""])[0]
         credentials["password"] = parsed_body.get("password", [""])[0]
@@ -65,17 +70,12 @@ def login(headers, body, authenticated_user=None):
 
     username = credentials.get("username")
     password = credentials.get("password")
-    # Kiểm tra credentials
-    if username in user_database and user_database[username] == password:
+    user_password = database.get_user_database(username)
+
+    if user_password and user_password == password:
         print(f"[SampleApp] Login successful for '{username}'")
-        # Tạo 1 cookie/session_id ngẫu nhiên
         session_id = "".join(random.choices(string.ascii_letters + string.digits, k=32))
-        session_store[session_id] = username
-        # hard code
-        if username == "nguyenbao":
-            session_id = "gygmXiAH44xDR0JpNFFVywu1eBxbyyzP"
-        elif username == "baodang":
-            session_id = "F3HuVCtKXrAJ9QxVaG1hUMJ7zfDYmYHq"
+        database.create_session(session_id, username)
         return {"login": "success", "session_id": session_id}
 
     else:
@@ -86,21 +86,22 @@ def login(headers, body, authenticated_user=None):
 @app.route("/register", methods=["POST"])
 def register_peer(headers, body):
     try:
-        cookies = extract_cookies(headers)
-        if not cookies or not cookies.get("session_id"):
+        username = get_user_from_session(headers)
+        if not username:
             return {"status": "failed", "reason": "unauthorized"}
 
-        username = session_store[cookies.get("session_id")]
         data = json.loads(body)
-        ip = data.get("ip")
+        # ip = data.get("ip")
+        conn_addr = headers.get("_conn_addr")
+        ip = conn_addr[0]
+        print(type(ip))
         port = int(data.get("port"))
 
         if not (username and ip and port):
             return {"status": "failed", "reason": "unauthorized"}
 
-        with peers_lock:
-            active_peers[username] = {"ip": ip, "port": port}
-
+        database.register_peer(username, ip, port)
+        database.join_channel(username, "global")
         print(f"[SampleApp] Registered peer: {username} at {ip}:{port}")
         return {"status": "registered", "peer": username}
     except Exception as e:
@@ -111,8 +112,132 @@ def register_peer(headers, body):
 @app.route("/get-peers", methods=["GET"])
 def get_peers(headers, body):
     print("[SampleApp] Request for peer list")
-    with peers_lock:
-        return active_peers.copy()
+    return database.get_peers()
+
+
+@app.route("/channels/create", methods=["POST"])
+def create_channel(headers, body):
+    username = get_user_from_session(headers)
+    if not username:
+        return {"status": "failed", "reason": "unauthorized"}
+    if not check_registered_status(username):
+        return {"status": "failed", "reason": "haven't register to the system"}
+    try:
+        data = json.loads(body)
+        channel_name = data.get("channel_name")
+        if not channel_name:
+            return {"status": "failed", "reason": "channel_name required"}
+        if channel_name in database.get_channels():
+            return {"status": "failed", "reason": "Channel already exists"}
+        database.quit_channel(username)
+        database.register_channel(username, channel_name)
+        database.join_channel(username, channel_name)
+        print(f"[SampleApp] User {username} created channel: {channel_name}")
+        return {"status": "created", "channel": channel_name}
+    except Exception as e:
+        return {"status": "failed", "reason": str(e)}
+
+
+@app.route("/channels/join", methods=["POST"])
+def join_channel(headers, body):
+    username = get_user_from_session(headers)
+    if not username:
+        return {"status": "failed", "reason": "unauthorized"}
+    if not check_registered_status(username):
+        return {"status": "failed", "reason": "haven't register to the system"}
+    try:
+        data = json.loads(body)
+        channel_name = data.get("channel_name")
+        if not channel_name:
+            return {"status": "failed", "reason": "channel_name required"}
+        if channel_name not in database.get_channels():
+            return {"status": "failed", "reason": "Channel does not exist"}
+
+        database.quit_channel(username)
+        database.join_channel(username, channel_name)
+        print(f"[SampleApp] User {username} joined channel: {channel_name}")
+        return {"status": "joined", "channel": channel_name}
+    except Exception as e:
+        return {"status": "failed", "reason": str(e)}
+
+
+@app.route("/channels/quit", methods=["GET"])
+def quit_channel(headers, body):
+    username = get_user_from_session(headers)
+    if not username:
+        return {"status": "failed", "reason": "unauthorized"}
+    if not check_registered_status(username):
+        return {"status": "failed", "reason": "haven't register to the system"}
+
+    try:
+        database.quit_channel(username)
+        print(f"[SampleApp] User {username} left, joined global")
+        database.join_channel(username, "global")
+        return {"status": "quited", "channel": "global"}
+    except Exception as e:
+        return {"status": "failed", "reason": str(e)}
+
+
+@app.route("/channels/peers", methods=["POST"])
+def get_channel_peers(headers, body):
+    username = get_user_from_session(headers)
+    if not username:
+        return {"status": "failed", "reason": "unauthorized"}
+    if not check_registered_status(username):
+        return {"status": "failed", "reason": "haven't register to the system"}
+    try:
+        data = json.loads(body)
+        channel_name = data.get("channel_name")
+        peers_in_channel = {}
+        if channel_name not in database.get_channels():
+            return {"status": "failed", "reason": "channel not found"}
+        username_in_channel = database.get_channel(channel_name)
+        peers = database.get_peers()
+        for user in username_in_channel:
+            peers_in_channel[user["username"]] = peers.get(user["username"])
+
+        return peers_in_channel
+    except Exception as e:
+        return {"status": "failed", "reason": str(e)}
+
+
+@app.route("/me", methods=["GET"])
+def get_my_status(headers, body):
+    username = get_user_from_session(headers)
+    if not username:
+        return {"status": "unauthorized"}
+
+    is_registered = check_registered_status(username)
+    current_channel = None
+
+    if is_registered:
+        all_channels = database.get_channels()
+        for channel_name, users in all_channels.items():
+            for user in users:
+                if user["username"] == username:
+                    current_channel = channel_name
+                    break
+            if current_channel:
+                break
+
+    return {
+        "status": "ok",
+        "username": username,
+        "is_registered": is_registered,
+        "current_channel": current_channel,
+    }
+
+
+@app.route("/channels/list", methods=["GET"])
+def get_channel_list(headers, body):
+    username = get_user_from_session(headers)
+    if not username:
+        return {"status": "failed", "reason": "unauthorized"}
+    try:
+        channel_names = list(database.get_channels().keys())
+        return {"status": "ok", "channels": channel_names}
+    except Exception as e:
+        return {"status": "failed", "reason": str(e)}
 
 
 @app.route("/hello", methods=["PUT"])
@@ -143,4 +268,4 @@ if __name__ == "__main__":
 
     # Prepare and launch the RESTful application
     app.prepare_address(ip, port)
-    app.run(session_store=session_store)
+    app.run()

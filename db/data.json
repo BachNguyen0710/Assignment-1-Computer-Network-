@@ -1,7 +1,65 @@
 {
-    "user":{
+    "users": {
         "baodang": "123",
         "nguyenbao": "456",
         "nguyenbach": "789"
+    },
+    "session_store": {
+        "OtY59NZHvXoM6uymlIF64UssEutJmAGi": "baodang",
+        "Z7Mz4lQ2QRBx9QtKZ2jit3QXdlhMROnr": "baodang",
+        "EMdyx8fUJoT0tCRe96YBawYTP6uiryj8": "baodang",
+        "WlwekQsR0FgMLyclz9Wma3lZHNn2CG27": "baodang",
+        "DDxVYo4yf5B8MYrm9YGiXxnCxhyVZddn": "baodang",
+        "APodPoxr7sBEfvBZlZgFC3UdfZqLvFmo": "baodang",
+        "6xdu8T1dwwIczEiKA9ssqh8dPsSQu4MR": "baodang",
+        "Jk5Ya5r96ccr75oP5qmGc44yD74rbp1p": "nguyenbao",
+        "CwwKoox8RgZu9G5iXvYe8mv3smyMyrVX": "baodang",
+        "2QO00FNxSW2e02yD4NVUbQHU2GAKotqr": "baodang",
+        "MkgL55vZzU53BVkny3acdO5e9TlDj45E": "baodang",
+        "fTIhmDC9k7JnJEFA2qssDRxjBY7qVD2d": "baodang",
+        "LIY98vJulLvPbzLVwHyLpB8IN6StB9kY": "nguyenbao",
+        "ApBr71N8UwLCdOauX91PKv6JjK3NCntV": "baodang",
+        "hQykfrtfwVJLonkck5BRtX5Hb5gdG0mu": "baodang",
+        "368ezmiikZpAcMDwk6KHxmJCaEy9hPI9": "baodang",
+        "KkENmiCNdIiIsHeRnCzKz426Bp1vaw0t": "nguyenbao",
+        "iLTVYqL3ipgiemDMTwKwj7rg3yALBp8l": "nguyenbao",
+        "LCrENqAa0I9rMdwxW7kgU0pmbShvkMDP": "nguyenbao",
+        "O5bQs9TrpLD2ZavKF7ZPV1L0HXPnohK1": "baodang",
+        "1jucO3CrZcdkpvhZmFN8R1O2irUR0vfA": "baodang",
+        "BsFgtUa5ZS9nM1FYzQgu6GTTRQpBaXRj": "baodang",
+        "nQpLTQnIZiFv71Vi75PmniHftNON2OTb": "baodang",
+        "mKQ3KtIN8CVjTy1OsNWHVDLoYMgX0LN7": "baodang",
+        "irF1khaAuzaeKo6yIBwPkqEWGf19tgvo": "baodang",
+        "pS85BTIEfcQJTjSHyuZKZQX6K78ipCLp": "baodang",
+        "0dzTsX92DIBYTPalL6wIPGxYJu2bJ904": "baodang",
+        "tT9VUNIMbo7jPn6f99IDgCivqCEQrYjf": "baodang",
+        "J6VXVEiIIoWsVFNx5UyS5lJEebQgFM1A": "baodang",
+        "lPOFXWsVTdTATs0D1tq6wfr6aOlkMYQw": "nguyenbao",
+        "8JsIU7x74ibmWV2aLXqQH035zNllvYAz": "nguyenbao",
+        "pomBW7oTOcLNmW0bHO93wh3RjdpPls0c": "baodang"
+    },
+    "active_peer": {
+        "baodang": {
+            "ip": "127.0.0.1",
+            "port": 3000
+        },
+        "nguyenbao": {
+            "ip": "127.0.0.1",
+            "port": 3001
+        }
+    },
+    "channels": {
+        "global": [
+            {
+                "username": "nguyenbao"
+            }
+        ],
+        "my channel": [
+            {
+                "username": "baodang"
+            }
+        ],
+        "my channel 2": [],
+        "Hello": []
     }
 }

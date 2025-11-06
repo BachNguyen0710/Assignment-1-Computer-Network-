@@ -1,8 +1,43 @@
-<html><body>
-<h1>Login</h1>
-<form method="POST" action="/login">
-  Username: <input name="username" type="text"><br>
-  Password: <input name="password" type="password"><br>
-  <input type="submit" value="Login">
-</form>
-</body></html>
+<html>
+
+<body>
+  <h1>Login</h1>
+  <form id="login-form">
+    Username: <input name="username" type="text"><br>
+    Password: <input name="password" type="password"><br>
+    <input type="submit" value="Login">
+  </form>
+  <p id="error-msg" style="color: red;"></p>
+
+  <script>
+    const API_URL = ''
+    const loginForm = document.getElementById('login-form');
+    const errorMsg = document.getElementById('error-msg');
+
+    loginForm.addEventListener('submit', async function (e) {
+      e.preventDefault();
+      const username = loginForm.username.value;
+      const password = loginForm.password.value;
+      try {
+        const response = await fetch(`${API_URL}/login`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+          },
+          credentials: 'include',
+          body: `username=${encodeURIComponent(username)}&password=${encodeURIComponent(password)}`
+        });
+        const data = await response.json();
+        if (data.login === 'success') {
+          window.location.href = 'index.html';
+        } else {
+          errorMsg.textContent = data.reason || 'Login failed.';
+        }
+      } catch (err) {
+        errorMsg.textContent = 'Could not connect to server.';
+      }
+    });
+  </script>
+</body>
+
+</html>

@@ -235,7 +235,10 @@ class Response:
         cookie_val = f"{key}={value}"
         if options:
             cookie_val += f"; {options}"
-        self.headers["Set-Cookie"] = cookie_val
+        if "Set-Cookie" not in self.headers:
+            self.headers["Set-Cookie"] = []
+        self.headers["Set-Cookie"].append(cookie_val)
+        # self.headers["Set-Cookie"] = cookie_val
 
     # Trong file daemon/response.py
 
@@ -269,8 +272,11 @@ class Response:
 
         # Lặp qua TẤT CẢ các header trong self.headers
         for key, value in self.headers.items():
-            fmt_header += "{}: {}\r\n".format(key, value)
-
+            if key == "Set-Cookie" and isinstance(value, list):
+                for cookie_string in value:
+                    fmt_header += "Set-Cookie: {}\r\n".format(cookie_string)
+            else:
+                fmt_header += "{}: {}\r\n".format(key, value)
         # Thêm dòng trống cuối cùng
         fmt_header += "\r\n"
 

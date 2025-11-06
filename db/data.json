@@ -1,7 +1,9 @@
 {
-    "user":{
+    "user": {
         "baodang": "123",
         "nguyenbao": "456",
         "nguyenbach": "789"
-    }
+    },
+    "session_store": {},
+    "active_peer": {}
 }

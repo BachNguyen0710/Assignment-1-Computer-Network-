@@ -33,4 +33,18 @@ python3 start_sampleapp.py --server-ip 127.0.0.1 --server-port 9000
 python3 start_sampleapp.py --server-ip 127.0.0.1 --server-port 9002
 ```
 
+The web app is now can be access via `http://localhost:8080`
+
 From now on you can make request by making API calls to the proxy server (in this case is 127.0.0.1:8080)
+
+To run the app please do the following, make sure you are inside the app's directory
+```bash
+python3 -m venv .
+source ./bin/activate
+```
+
+After than you can now run the app by using
+```bash
+python3 chat_ui.py
+```
+

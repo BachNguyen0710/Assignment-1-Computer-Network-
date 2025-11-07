@@ -3,7 +3,7 @@ import threading
 import tkinter as tk
 from tkinter import simpledialog, messagebox, scrolledtext
 from queue import Queue
-from p2p_handler import P2PHandler
+from p2p_handler_http import P2PHandler
 
 
 class P2PChatClient:
@@ -22,7 +22,7 @@ class P2PChatClient:
 
         if self.logic.my_username:
             self.display_message(f"[System] Welcome, {self.logic.my_username}!")
-            self.logic.start_listener()
+            # self.logic.start_listener()
             self.root.after(100, self.check_message_queue)
         else:
             self.root.destroy()

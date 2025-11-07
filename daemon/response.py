@@ -304,9 +304,9 @@ class Response:
         self.status_code = 401
         self.reason = "Unauthorized"
         self.headers["Content-Type"] = "text/html"
-        self._content = f'<h1>401 Unauthorized</h1><p>You must log in to access this page.</p><a href="{
+        self._content = f'''<h1>401 Unauthorized</h1><p>You must log in to access this page.</p><a href="{
             login_page
-        }">Login</a>'.encode("utf-8")
+        }">Login</a>'''.encode("utf-8")
         print(self.headers, "Header")
 
         self._header = self.build_response_header(request)

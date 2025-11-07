@@ -143,9 +143,9 @@ class HttpAdapter:
 
             if req.hook:
                 print(
-                    f"[HttpAdapter] Hooking to route: METHOD {req.method} PATH {
+                    f"""[HttpAdapter] Hooking to route: METHOD {req.method} PATH {
                         req.path
-                    }"
+                    }"""
                 )
                 req.headers["_conn_addr"] = self.connaddr
                 app_resp = req.hook(headers=req.headers, body=req.body)

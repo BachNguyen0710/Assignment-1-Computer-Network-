@@ -1,5 +1,6 @@
 import os
 import json
+import time
 
 DIR_PATH = os.path.dirname(os.path.abspath(__file__))
 JSON_PATH = os.path.join(DIR_PATH, "data.json")
@@ -49,7 +50,11 @@ def register_peer(username, ip, port):
     data = read_json()
     if "active_peer" not in data:
         data["active_peer"] = {}
-    data["active_peer"][username] = {"ip": ip, "port": port}
+    data["active_peer"][username] = {
+        "ip": ip,
+        "port": port,
+        "last_seen": int(time.time()),
+    }
     write_json(data)
 
 
@@ -58,7 +63,15 @@ def get_peers():
     return data.get("active_peer", {})
 
 
+def update_heartbeat(username):
+    data = read_json()
+    data["active_peer"][username]["last_seen"] = int(time.time())
+    write_json(data)
+
+
 # Channel
+
+
 def register_channel(username, channel_name):
     data = read_json()
     quit_channel(username)
@@ -90,5 +103,6 @@ def quit_channel(username):
 
 def join_channel(username, channel_name):
     data = read_json()
-    data["channels"][channel_name].append({"username": username})
+    if {"username": username} not in data["channels"][channel_name]:
+        data["channels"][channel_name].append({"username": username})
     write_json(data)

@@ -28,14 +28,15 @@ import argparse
 import json
 import random
 import string
-import threading
 import urllib.parse
+import time
 
 from daemon.utils import extract_cookies
 from daemon.weaprous import WeApRous
 from db import database
 
-PORT = 8000  # Default port
+PORT = 8080
+HEARTBEAT_TIMEOUT = 10
 
 app = WeApRous()
 
@@ -109,10 +110,43 @@ def register_peer(headers, body):
         return {"status": "failed", "reason": str(e)}
 
 
+@app.route("/heartbeat", methods=["GET"])
+def heartbeat(headers, body):
+    username = get_user_from_session(headers)
+    if not username:
+        return {"status": "failed", "reason": "unauthorized"}
+
+    if not check_registered_status(username):
+        return {"status": "failed", "reason": "not registered as peer"}
+
+    try:
+        database.update_heartbeat(username)
+        return {"status": "ok"}
+    except Exception as e:
+        print(f"[SampleApp] Heartbeat failed for {username}: {e}")
+        return {"status": "failed", "reason": str(e)}
+
+
+def get_active_peers():
+    all_peers = database.get_peers()
+    active_peers = {}
+    current_time = int(time.time())
+
+    for username, data in all_peers.items():
+        last_seen = data.get("last_seen", 0)
+        if data and (current_time - last_seen) < HEARTBEAT_TIMEOUT:
+            active_peers[username] = data
+        else:
+            print(username)
+            database.quit_channel(username)
+            print(f"[SampleApp] Pruning stale peer: {username}")
+    return active_peers
+
+
 @app.route("/get-peers", methods=["GET"])
 def get_peers(headers, body):
     print("[SampleApp] Request for peer list")
-    return database.get_peers()
+    return get_active_peers()
 
 
 @app.route("/channels/create", methods=["POST"])
@@ -192,9 +226,10 @@ def get_channel_peers(headers, body):
         if channel_name not in database.get_channels():
             return {"status": "failed", "reason": "channel not found"}
         username_in_channel = database.get_channel(channel_name)
-        peers = database.get_peers()
+        peers = get_active_peers()
         for user in username_in_channel:
-            peers_in_channel[user["username"]] = peers.get(user["username"])
+            if peers.get(user["username"]):
+                peers_in_channel[user["username"]] = peers.get(user["username"])
 
         return peers_in_channel
     except Exception as e:

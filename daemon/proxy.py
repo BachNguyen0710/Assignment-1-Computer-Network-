@@ -146,6 +146,21 @@ def handle_client(ip, port, conn, addr, routes):
 
     request = conn.recv(1024).decode()
 
+    # add client ip to the request
+    try:
+        client_ip = addr[0]
+        parts = request.split("\r\n", 1)
+        if len(parts) == 2:
+            first_line = parts[0]
+            rest_of_request = parts[1]
+            header_to_add = f"X-Forwarded-For: {client_ip}\r\n"
+            request_fwd = first_line + "\r\n" + header_to_add + rest_of_request
+        else:
+            request_fwd = request
+    except Exception as e:
+        print(f"[Proxy] Error injecting header: {e}")
+    print(request_fwd)
+
     # Extract hostname
     for line in request.splitlines():
         if line.lower().startswith("host:"):
@@ -167,7 +182,7 @@ def handle_client(ip, port, conn, addr, routes):
                 hostname, resolved_host, resolved_port
             )
         )
-        response = forward_request(resolved_host, resolved_port, request)
+        response = forward_request(resolved_host, resolved_port, request_fwd)
     else:
         response = (
             "HTTP/1.1 404 Not Found\r\n"

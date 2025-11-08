@@ -92,10 +92,9 @@ def register_peer(headers, body):
             return {"status": "failed", "reason": "unauthorized"}
 
         data = json.loads(body)
-        # ip = data.get("ip")
-        conn_addr = headers.get("_conn_addr")
-        ip = conn_addr[0]
-        print(type(ip))
+        conn_addr = headers.get("x-forwarded-for", "127.0.0.1")
+        ip = conn_addr
+        print(ip)
         port = int(data.get("port"))
 
         if not (username and ip and port):

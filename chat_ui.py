@@ -14,7 +14,7 @@ class P2PChatClient:
 
         self.message_queue = Queue()
 
-        self.logic = P2PHandler(self.message_queue, api_url="http://localhost:8080")
+        self.logic = P2PHandler(self.message_queue, api_url="http://192.168.1.204:8080")
 
         self.build_chat_ui()
 

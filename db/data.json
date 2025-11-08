@@ -53,18 +53,28 @@
         "c6sMW5sxm95WVJdkQxPZ1R3FGtf3CZ02": "baodang",
         "zGtfZwc2vzu5sjM1Bq0jqlbC0s18K5hv": "baodang",
         "MDsYe4DnIkMlZ7ixaRha0YFI03nSoJGr": "baodang",
-        "occKSFX9vTeXfcZMalG8Sn1ovGVBYez5": "nguyenbao"
+        "occKSFX9vTeXfcZMalG8Sn1ovGVBYez5": "nguyenbao",
+        "aFo0HdMXKpjzSW7xZdMHDj4ZGCMp8UJZ": "baodang",
+        "Rs9MADLsl7iPzkold5jZeRDTGR26tL1Y": "baodang",
+        "XdwFtWcKteFPwPcGrclytioNjT550UJE": "nguyenbao",
+        "ro1CvNzJDXLGwgmEFq71XVZODO7JvMal": "nguyenbao",
+        "oJlSCx9FTUNaY2scRwU2d7H7tkI0SIst": "baodang",
+        "mlxQkRA4OXqyLSX9rXrYyX8FvPeLmAnW": "baodang",
+        "sOuVI4Ztih3gDrLgmEmEBjNjtozcAXrW": "baodang",
+        "BvN8LbMoMhZ5i6E1K5jiIuOoKk8FToVA": "baodang",
+        "USESzva1l4C07DZOE11v6XGdlWBkUwPk": "baodang",
+        "p66eSg4LFCYLvhg8xCJRVkiRbwKCiEqC": "nguyenbao"
     },
     "active_peer": {
         "baodang": {
-            "ip": "127.0.0.1",
-            "port": 3000,
-            "last_seen": 1762547777
+            "ip": "192.168.1.204",
+            "port": 3001,
+            "last_seen": 1762617035
         },
         "nguyenbao": {
-            "ip": "127.0.0.1",
-            "port": 3001,
-            "last_seen": 1762547781
+            "ip": "192.168.1.247",
+            "port": 2000,
+            "last_seen": 1762617036
         }
     },
     "channels": {

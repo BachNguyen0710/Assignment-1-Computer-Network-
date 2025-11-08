@@ -147,7 +147,6 @@ class HttpAdapter:
                         req.path
                     }"""
                 )
-                req.headers["_conn_addr"] = self.connaddr
                 app_resp = req.hook(headers=req.headers, body=req.body)
 
                 if req.path == "/login" and req.method == "POST":
